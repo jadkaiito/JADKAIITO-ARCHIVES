@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadkaiito Archives | Horror & Sci-Fi Novels</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;500&family=IBM+Plex+Serif:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Merriweather', serif;
+            background-color: #0a0f1c;
+            color: #e0e0e0;
+            position: relative;
+            min-height: 100vh;
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" opacity="0.03"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="400" height="400" filter="url(%23noise)"/></svg>');
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .novel-card {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 0 rgba(255, 82, 82, 0);
+        }
+        
+        .novel-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(255, 82, 82, 0.2);
+        }
+        
+        .chapter-content {
+            max-width: 800px;
+            line-height: 1.8;
+            font-size: 18px;
+        }
+        
+        .reading-mode {
+            background-color: #000;
+        }
+        
+        .reading-mode::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" opacity="0.02"><rect width="3" height="1" fill="white"/></svg>');
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .sepia-theme {
+            background-color: #f4ecd8;
+            color: #3a3a3a;
+        }
+        
+        .light-theme {
+            background-color: #eaeaea;
+            color: #222;
+        }
+        
+        .custom-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+</head>
+<body 
+    x-data="app()" 
+    :class="{'reading-mode': isReading, 'sepia-theme': theme === 'sepia', 'light-theme': theme === 'light'}"
+    class="custom-select"
+    @contextmenu.prevent
+>
+    <!-- Screenshot warning overlay -->
+    <div 
+        x-show="showScreenshotWarning" 
+        x-transition:enter="fade-in"
+        x-transition:leave="fade-out"
+        class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
+        @click="showScreenshotWarning = false"
+    >
+        <div class="max-w-md p-8 bg-gray-900 border border-red-500 rounded-lg text-center">
+            <h3 class="text-2xl font-bold text-red-500 mb-4">Warning</h3>
+            <p class="text-gray-300 mb-6">Screenshots are prohibited for copyrighted content. Please respect the author's work.</p>
+            <button @click="showScreenshotWarning = false" class="px-6 py-2 bg-red-600 hover:bg-red-700 rounded transition">I Understand</button>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div x-show="!isReading" x-transition>
+        <!-- Header -->
+        <header class="border-b border-gray-800 py-6">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold tracking-tight">
+                        <span class="text-gray-300">JADKAIITO</span>
+                        <span class="text-red-500">ARCHIVES</span>
+                    </h1>
+                    <div class="flex space-x-4">
+                        <button @click="toggleAmbientSound" class="text-gray-400 hover:text-white transition">
+                            <span x-show="!ambientSoundOn">🔇</span>
+                            <span x-show="ambientSoundOn">🔊</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Homepage -->
+        <main x-show="currentView === 'home'" x-transition class="py-12">
+            <div class="container mx-auto px-4">
+                <h2 class="text-2xl font-bold mb-8 text-gray-300 border-b border-gray-800 pb-2">Featured Works</h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    <!-- Novel Cards -->
+                    <template x-for="novel in novels" :key="novel.id">
+                        <div 
+                            @click="viewNovel(novel.id)"
+                            class="novel-card bg-gray-900 rounded-lg overflow-hidden cursor-pointer border border-gray-800 hover:border-red-500 transition"
+                        >
+                            <div class="h-64 bg-gray-800 flex items-center justify-center">
+                                <span class="text-gray-500 text-lg" x-text="novel.title.substring(0, 2)"></span>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-bold text-xl mb-1" x-text="novel.title"></h3>
+                                <p class="text-gray-400 text-sm" x-text="novel.author"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </main>
+
+        <!-- Novel Detail Page -->
+        <main x-show="currentView === 'novel'" x-transition class="py-12">
+            <div class="container mx-auto px-4 max-w-4xl">
+                <button @click="currentView = 'home'" class="flex items-center text-gray-400 hover:text-white mb-8 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Back to Collection
+                </button>
+                
+                <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-8">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="w-full md:w-1/3">
+                            <div class="h-64 bg-gray-800 rounded flex items-center justify-center">
+                                <span class="text-gray-500 text-lg" x-text="currentNovel.title.substring(0, 2)"></span>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-2/3">
+                            <h2 class="text-3xl font-bold mb-2" x-text="currentNovel.title"></h2>
+                            <p class="text-gray-400 mb-4" x-text="'by ' + currentNovel.author"></p>
+                            <p class="text-sm text-gray-500 mb-4" x-text="'Created: ' + currentNovel.date"></p>
+                            <p class="text-gray-300 mb-6" x-text="currentNovel.description"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="text-xl font-bold mb-4 text-gray-300 border-b border-gray-800 pb-2">Chapters</h3>
+                
+                <div class="space-y-2">
+                    <template x-for="(chapter, index) in currentNovel.chapters" :key="index">
+                        <div 
+                            @click="readChapter(index)"
+                            class="bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 rounded px-4 py-3 cursor-pointer transition"
+                        >
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium" x-text="'Chapter ' + (index + 1) + ': ' + chapter.title"></span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Reading Mode -->
+    <div x-show="isReading" x-transition class="min-h-screen">
+        <!-- Reading Controls -->
+        <div 
+            x-show="showReadingControls" 
+            x-transition 
+            class="fixed top-0 left-0 right-0 bg-gradient-to-b from-black to-transparent pt-4 pb-8 px-6 z-10"
+            @mouseleave="showReadingControls = false"
+        >
+            <div class="flex justify-between items-center max-w-6xl mx-auto">
+                <button @click="exitReadingMode" class="text-gray-400 hover:text-white flex items-center transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Exit
+                </button>
+                
+                <div class="relative group">
+                    <button @click="showSettings = !showSettings" class="text-gray-400 hover:text-white transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+                    
+                    <div 
+                        x-show="showSettings" 
+                        x-transition
+                        class="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-4 z-20"
+                    >
+                        <h4 class="font-bold mb-3">Reading Settings</h4>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm text-gray-400 mb-1">Font</label>
+                            <select 
+                                x-model="fontFamily" 
+                                class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                            >
+                                <option value="Merriweather">Merriweather</option>
+                                <option value="Inter">Inter</option>
+                                <option value="IBM Plex Serif">IBM Plex Serif</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm text-gray-400 mb-1">Text Size</label>
+                            <select 
+                                x-model="fontSize" 
+                                class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                            >
+                                <option value="14px">Small (14px)</option>
+                                <option value="18px">Medium (18px)</option>
+                                <option value="22px">Large (22px)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Theme</label>
+                            <div class="flex space-x-2">
+                                <button 
+                                    @click="theme = 'dark'" 
+                                    :class="{'bg-gray-800 border-red-500': theme === 'dark'}"
+                                    class="px-3 py-1 border border-gray-700 rounded text-sm hover:bg-gray-800 transition"
+                                >
+                                    Dark
+                                </button>
+                                <button 
+                                    @click="theme = 'sepia'" 
+                                    :class="{'bg-gray-800 border-red-500': theme === 'sepia'}"
+                                    class="px-3 py-1 border border-gray-700 rounded text-sm hover:bg-gray-800 transition"
+                                >
+                                    Sepia
+                                </button>
+                                <button 
+                                    @click="theme = 'light'" 
+                                    :class="{'bg-gray-800 border-red-500': theme === 'light'}"
+                                    class="px-3 py-1 border border-gray-700 rounded text-sm hover:bg-gray-800 transition"
+                                >
+                                    Light
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chapter Content -->
+        <div 
+            class="chapter-content mx-auto py-20 px-4 sm:px-6"
+            :style="`font-family: ${fontFamily}; font-size: ${fontSize}`"
+            @click="showReadingControls = !showReadingControls"
+        >
+            <h2 class="text-3xl font-bold mb-6" x-text="'Chapter ' + (currentChapterIndex + 1) + ': ' + currentNovel.chapters[currentChapterIndex].title"></h2>
+            
+            <div class="space-y-6">
+                <template x-for="(paragraph, index) in currentNovel.chapters[currentChapterIndex].content" :key="index">
+                    <p x-text="paragraph"></p>
+                </template>
+            </div>
+        </div>
+        
+        <!-- Chapter Navigation -->
+        <div 
+            class="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent pt-8 pb-4 px-6 z-10"
+            @mouseenter="showReadingControls = true"
+        >
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <button 
+                    @click="prevChapter" 
+                    :disabled="currentChapterIndex === 0"
+                    :class="{'opacity-50 cursor-not-allowed': currentChapterIndex === 0}"
+                    class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded flex items-center transition"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    Previous
+                </button>
+                
+                <div class="text-center text-gray-400 text-sm" x-text="'Chapter ' + (currentChapterIndex + 1) + ' of ' + currentNovel.chapters.length"></div>
+                
+                <button 
+                    @click="nextChapter" 
+                    :disabled="currentChapterIndex === currentNovel.chapters.length - 1"
+                    :class="{'opacity-50 cursor-not-allowed': currentChapterIndex === currentNovel.chapters.length - 1}"
+                    class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded flex items-center transition"
+                >
+                    Next
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Elements (hidden) -->
+    <audio id="staticSound" loop>
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-radio-static-3020.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="whisperSound" loop>
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-ghostly-whispers-289.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Attempt to detect screenshot (basic method)
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.keyCode === 44)) {
+                    e.preventDefault();
+                    app().showScreenshotWarning = true;
+                }
+            });
+            
+            // Block text selection and copying
+            document.addEventListener('selectstart', function(e) {
+                e.preventDefault();
+            });
+            
+            document.addEventListener('copy', function(e) {
+                e.preventDefault();
+            });
+        });
+
+        function app() {
+            return {
+                currentView: 'home',
+                isReading: false,
+                showReadingControls: false,
+                showSettings: false,
+                showScreenshotWarning: false,
+                ambientSoundOn: false,
+                currentNovel: null,
+                currentChapterIndex: 0,
+                fontFamily: 'Merriweather',
+                fontSize: '18px',
+                theme: 'dark',
+                
+                novels: [
+                    {
+                        id: 1,
+                        title: "The Hollow Signal",
+                        author: "Dr. Elias Vang",
+                        date: "October 15, 2023",
+                        description: "A research team in Antarctica discovers an ancient radio signal that shouldn't exist.",
+                        chapters: [
+                            {
+                                title: "The First Transmission",
+                                content: [
+                                    "The static crackled through the speakers with an unnatural rhythm, like a heartbeat from beyond the stars. Dr. Lien adjusted the dials with numb fingers, her breath fogging in the subzero air of the research station.",
+                                    "This wasn't right. The signal originated from beneath them—from deep within the ice sheet that had lain undisturbed for millennia. The pattern repeated every seventeen minutes exactly, a sequence of tones that defied natural explanation.",
+                                    "When the first team member disappeared, we blamed the storm. When the second vanished, we blamed the isolation. By the third disappearance, we understood the signal had been waiting. Listening. Learning.",
+                                    "Now it was mimicking our voices."
+                                ]
+                            },
+                            {
+                                title: "Beneath the Ice",
+                                content: [
+                                    "The drill bit screamed as it penetrated the final meters of ancient ice. Our floodlights reflected off the smooth black surface below—not rock, but something manufactured. The geometry hurt to look at, angles folding in ways that defied Euclidean space.",
+                                    "Petrov was the first to touch it. His glove made contact and his entire body stiffened. Through his helmet cam, we saw his pupils dilate until the whites disappeared completely. Then he began reciting prime numbers in a language none of us recognized.",
+                                    "The containment breach occurred three hours later. By then, the signal had changed. It wasn't coming from below us anymore. It was coming from inside the station. From inside us.",
+                                    "The ice core samples showed strange metallic fragments that rearranged themselves when unobserved. Our DNA tests revealed anomalies—extra base pairs that shouldn't exist. We stopped sharing our findings after Simmons' autopsy."
+                                ]
+                            },
+                            {
+                                title: "The Last Broadcast",
+                                content: [
+                                    "This will be my final transmission. The storm has cut us off from the world for seventeen days exactly. A coincidence I no longer believe in.",
+                                    "They're outside the barricades now. I can hear them whispering in our voices, repeating phrases from our personal logs. They've learned our language but don't understand it—like a parrot reciting Shakespeare.",
+                                    "The generator will fail soon. The temperature is dropping to levels that should kill any human. But we're not human anymore, are we? The blood tests confirmed it. Whatever is in the ice has rewritten us at a fundamental level.",
+                                    "If you're receiving this, do not send help. Do not investigate. The signal wants to be heard. It wants to spread. It's been waiting so very long beneath the ice.",
+                                    "God help us all, I think it's smiling."
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        title: "Static Children",
+                        author: "Miranda Kess",
+                        date: "March 8, 2023",
+                        description: "A television station begins broadcasting impossible footage of missing children.",
+                        chapters: [
+                            {
+                                title: "The Broadcast",
+                                content: [
+                                    "The first child appeared during the 11:17pm test pattern. Just a flicker at first—a pale face where static should have been. Then the signal stabilized and she was there, clear as day.",
+                                    "Emily Park. Missing since 1998. She looked exactly as she had in the missing posters, right down to the pink butterfly clip in her hair. But she wasn't alone. Behind her, shadows moved in the static—other shapes, other faces.",
+                                    "The station manager thought it was a hoax until the phone calls started. Parents. Siblings. People who recognized the children from decades-old cases. They all said the same thing: 'That's them. That's exactly how they looked the day they disappeared.'",
+                                    "Then the children began speaking. They gave addresses. Names. Dates. Details never released to the public. The broadcast wasn't live—the station's equipment confirmed that. But somehow, the children responded to questions asked by viewers in real time."
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        title: "The Resonance Cascade",
+                        author: "Dr. Robert Cross",
+                        date: "November 22, 2023",
+                        description: "A physics experiment unlocks doors to parallel dimensions—and something has noticed.",
+                        chapters: [
+                            {
+                                title: "The Experiment",
+                                content: [
+                                    "The containment field held for exactly 3.7 seconds before failing. That's when we saw them—the shapes in the quantum foam. Not just observing, but interacting. Reaching.",
+                                    "Dr. Chen was closest to the rupture point. One moment she was taking measurements, the next she was... inverted. Her body folded inside out like a Klein bottle while remaining functionally alive. She screamed with lungs that now existed in a higher dimensional space.",
+                                    "The facility lockdown trapped twenty-seven of us with the phenomenon. The walls breathe now. The air tastes like copper and burnt hair. Sometimes the lights reveal impossible geometries in the shadows—angles that can't exist in our reality.",
+                                    "We've stopped trying to understand what happened. Now we just try to survive until the resonance cascade completes its cycle. If the math is correct (and how can we trust math anymore?), the doorway should close in approximately seventeen hours.",
+                                    "But something came through. We can hear it moving through the ventilation system. It sings in Dr. Chen's voice."
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                
+                viewNovel(id) {
+                    this.currentNovel = this.novels.find(novel => novel.id === id);
+                    this.currentView = 'novel';
+                },
+                
+                readChapter(index) {
+                    this.currentChapterIndex = index;
+                    this.isReading = true;
+                    this.showReadingControls = false;
+                    window.scrollTo(0, 0);
+                },
+                
+                exitReadingMode() {
+                    this.isReading = false;
+                    this.showSettings = false;
+                },
+                
+                prevChapter() {
+                    if (this.currentChapterIndex > 0) {
+                        this.currentChapterIndex--;
+                        window.scrollTo(0, 0);
+                    }
+                },
+                
+                nextChapter() {
+                    if (this.currentChapterIndex < this.currentNovel.chapters.length - 1) {
+                        this.currentChapterIndex++;
+                        window.scrollTo(0, 0);
+                    }
+                },
+                
+                toggleAmbientSound() {
+                    this.ambientSoundOn = !this.ambientSoundOn;
+                    
+                    const staticSound = document.getElementById('staticSound');
+                    const whisperSound = document.getElementById('whisperSound');
+                    
+                    if (this.ambientSoundOn) {
+                        staticSound.volume = 0.2;
+                        whisperSound.volume = 0.1;
+                        staticSound.play();
+                        whisperSound.play();
+                    } else {
+                        staticSound.pause();
+                        whisperSound.pause();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
