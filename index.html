@@ -76,6 +76,21 @@
             -ms-user-select: none;
             user-select: none;
         }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0f1c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
         
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
@@ -265,6 +280,17 @@
                             </select>
                         </div>
                         
+                        <div class="mb-4">
+                            <label class="block text-sm text-gray-400 mb-1">Language</label>
+                            <select 
+                                x-model="language" 
+                                class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                            >
+                                <option value="english">English</option>
+                                <option value="arabic">العربية (Arabic)</option>
+                            </select>
+                        </div>
+
                         <div>
                             <label class="block text-sm text-gray-400 mb-1">Theme</label>
                             <div class="flex space-x-2">
@@ -387,6 +413,7 @@
                 fontFamily: 'Merriweather',
                 fontSize: '18px',
                 theme: 'dark',
+                language: 'english',
                 
                 novels: [
                     {
