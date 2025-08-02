@@ -2,7 +2,8 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0f1c">
     <title>Jadkaiito Archives | Horror & Sci-Fi Novels</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -11,7 +12,14 @@
         body {
             font-family: 'Merriweather', serif;
             background-color: #0a0f1c;
-            color: #e0e0e0;
+            color: #f0f0f0;
+            --primary: #ff5252;
+            --secondary: #6d28d9;
+            --accent: #10b981;
+            --text-primary: #f0f0f0;
+            --text-secondary: #a1a1aa;
+            --bg-dark: #0a0f1c;
+            --bg-darker: #05080e;
             position: relative;
             min-height: 100vh;
         }
@@ -29,19 +37,50 @@
         }
         
         .novel-card {
-            transition: all 0.3s ease;
-            box-shadow: 0 0 0 rgba(255, 82, 82, 0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .novel-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,82,82,0.1) 0%, rgba(0,0,0,0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         
         .novel-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(255, 82, 82, 0.2);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(255, 82, 82, 0.3);
+        }
+        
+        .novel-card:hover::before {
+            opacity: 1;
         }
         
         .chapter-content {
-            max-width: 800px;
+            max-width: min(800px, 90vw);
             line-height: 1.8;
-            font-size: 18px;
+            font-size: clamp(1rem, 1.5vw, 1.2rem);
+            padding: 2rem;
+            margin: 0 auto;
+            text-align: justify;
+            hyphens: auto;
+            letter-spacing: 0.02em;
+        }
+        
+        @media (max-width: 768px) {
+            .chapter-content {
+                line-height: 1.7;
+                padding: 1.5rem;
+                font-size: 1rem;
+            }
         }
         
         .reading-mode {
@@ -108,6 +147,23 @@
         @keyframes fadeOut {
             from { opacity: 1; }
             to { opacity: 0; }
+        }
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary);
+            z-index: 9999;
+            transform-origin: left;
+            animation: load 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes load {
+            0% { transform: scaleX(0); opacity: 1; }
+            50% { transform: scaleX(0.7); opacity: 0.7; }
+            100% { transform: scaleX(1); opacity: 0; }
         }
     </style>
 </head>
@@ -230,8 +286,9 @@
         <div 
             x-show="showReadingControls" 
             x-transition 
-            class="fixed top-0 left-0 right-0 bg-gradient-to-b from-black to-transparent pt-4 pb-8 px-6 z-10"
-            @mouseleave="showReadingControls = false"
+            class="fixed top-0 left-0 right-0 bg-gradient-to-b from-black to-transparent pt-4 pb-8 px-6 z-10 touch-none"
+            @mouseleave="!isMobile && (showReadingControls = false)"
+            @touchstart="isMobile = true"
         >
             <div class="flex justify-between items-center max-w-6xl mx-auto">
                 <button @click="exitReadingMode" class="text-gray-400 hover:text-white flex items-center transition">
@@ -382,6 +439,36 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Swipe detection for mobile
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            document.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, false);
+            
+            document.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, false);
+            
+            function handleSwipe() {
+                if (Math.abs(touchEndX - touchStartX) < 50) return;
+                
+                if (touchEndX < touchStartX) {
+                    // Swipe left - next chapter
+                    if (app().currentChapterIndex < app().currentNovel.chapters.length - 1) {
+                        app().nextChapter();
+                    }
+                }
+                
+                if (touchEndX > touchStartX) {
+                    // Swipe right - previous chapter
+                    if (app().currentChapterIndex > 0) {
+                        app().prevChapter();
+                    }
+                }
+            }
             // Attempt to detect screenshot (basic method)
             document.addEventListener('keydown', function(e) {
                 if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.keyCode === 44)) {
